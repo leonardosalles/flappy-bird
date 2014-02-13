@@ -47,11 +47,14 @@ function main() {
 	    var assets = {
 	        spritesheet: {
 	            birdie: ['assets/birdie.png', 24, 24],
-	            clouds: ['assets/clouds.png', 128, 64]
+	            clouds: ['assets/clouds.png', 128, 64],
+                reset: ['assets/reset.png', 193, 71],
 	        },
 	        image: {
 	            pipe: ['assets/pipe.png'],
-	            fence: ['assets/fence.png']
+	            fence: ['assets/fence.png'],
+                gameOver: ['assets/gameover.png'],
+                scoreEnd: ['assets/scoreend.png']
 	        },
 	        audio: {
 	            flap: ['assets/flap.wav'],
@@ -59,6 +62,7 @@ function main() {
 	            hurt: ['assets/hurt.wav']
 	        }
 	    };
+
 	    Object.keys(assets).forEach(function(type) {
 	        Object.keys(assets[type]).forEach(function(id) {
 	            game.load[type].apply(game.load, [id].concat(assets[type][id]));
@@ -77,13 +81,15 @@ function main() {
 	    birdie,
 	    fence,
 	    scoreText,
-	    instText,
+	    resetButton,
 	    gameOverText,
 	    flapSnd,
 	    scoreSnd,
 	    hurtSnd,
 	    pipesTimer,
-	    cloudsTimer;
+	    cloudsTimer,
+        gameOverImage,
+        scoreEndImage;
 	
 	function create() {
 	    var screenWidth = parent.clientWidth > window.innerWidth ? window.innerWidth : parent.clientWidth;
@@ -91,7 +97,7 @@ function main() {
 	    game.world.width = screenWidth;
 	    game.world.height = screenHeight;
 	    bg = game.add.graphics(0, 0);
-	    bg.beginFill(0xDDEEFF, 1);
+	    bg.beginFill(0x6ED2DB, 1);
 	    bg.drawRect(0, 0, game.world.width, game.world.height);
 	    bg.endFill();
 	    credits = game.add.text(
@@ -128,8 +134,9 @@ function main() {
 	            align: 'center'
 	        }
 	    );
+        
 	    scoreText.anchor.setTo(0.5, 0.5);
-	    instText = game.add.text(
+	    resetButton = game.add.text(
 	        game.world.width / 2,
 	        game.world.height - game.world.height / 4,
 	        '',
@@ -141,7 +148,7 @@ function main() {
 	            align: 'center'
 	        }
 	    );
-	    instText.anchor.setTo(0.5, 0.5);
+	    resetButton.anchor.setTo(0.5, 0.5);
 	    gameOverText = game.add.text(
 	        game.world.width / 2,
 	        game.world.height / 2,
@@ -172,8 +179,8 @@ function main() {
 	    gameOver = false;
 	    score = 0;
 	    credits.renderable = true;
+        resetButton.destroy();
 	    scoreText.setText('FLAPPY\nBIRD');
-	    instText.setText('');
 	    gameOverText.renderable = false;
 	    birdie.body.allowGravity = false;
 	    birdie.angle = 0;
@@ -192,7 +199,7 @@ function main() {
 	    pipesTimer.start();
 	    pipesTimer.add(2);
 	    scoreText.setText(score);
-	    instText.renderable = false;
+	    resetButton.renderable = false;
 	    gameStarted = true;
 	}
 	
@@ -273,9 +280,11 @@ function main() {
 	
 	function setGameOver() {
 	    gameOver = true;
-	    instText.setText('TOUCH BIRDIE\nTO TRY AGAIN');
-	    instText.renderable = true;
-	    var hiscore = window.localStorage.getItem('hiscore');
+        resetButton = game.add.button(game.world.centerX - 95, window.innerHeight * 0.7, 'reset', reset, this, 2, 1, 0);
+        //gameOverImage = game.add.sprite(0, 0, 'gameover');
+        //scoreEndImage = game.add.sprite(0, 0, 'scoreend');
+
+        var hiscore = window.localStorage.getItem('hiscore');
 	    hiscore = hiscore ? hiscore : score;
 	    hiscore = score > parseInt(hiscore, 10) ? score : hiscore;
 	    window.localStorage.setItem('hiscore', hiscore);
@@ -288,7 +297,7 @@ function main() {
 	        inv.body.velocity.x = 0;
 	    });
 	    pipesTimer.stop();
-	    birdie.events.onInputDown.addOnce(reset);
+	    
 	    hurtSnd.play();
 	}
 	
@@ -311,12 +320,12 @@ function main() {
 	            birdie.animations.play('fly');
 	        }
 	        if (gameOver) {
-	            if (birdie.scale.x < 4) {
+	            /*if (birdie.scale.x < 4) {
 	                birdie.scale.setTo(
 	                    birdie.scale.x * 1.2,
 	                    birdie.scale.y * 1.2
 	                );
-	            }
+	            }*/
 	            gameOverText.angle = Math.random() * 5 * Math.cos(game.time.now / 100);
 	        } else {
 	            game.physics.overlap(birdie, pipes, setGameOver);
@@ -334,12 +343,7 @@ function main() {
 	    } else {
 	        birdie.y = (game.world.height / 2) + 8 * Math.cos(game.time.now / 200);
 	    }
-	    if (!gameStarted || gameOver) {
-	        instText.scale.setTo(
-	            2 + 0.1 * Math.sin(game.time.now / 100),
-	            2 + 0.1 * Math.cos(game.time.now / 100)
-	        );
-	    }
+
 	    scoreText.scale.setTo(
 	        2 + 0.1 * Math.cos(game.time.now / 100),
 	        2 + 0.1 * Math.sin(game.time.now / 100)
